@@ -52,31 +52,37 @@ const modelWithTools = model.bindTools(tools);
 async function agentLoop(userMessage, sessionId) {
   if (!conversationHistory.has(sessionId)) {
     conversationHistory.set(sessionId, [
-      new SystemMessage("You are a car dealer. Ask for 'type' and 'budget' before searching.")
+      new SystemMessage("You are a helpful car dealer. You MUST use tools to check inventory before answering.")
     ]);
   }
 
   const messages = conversationHistory.get(sessionId);
   messages.push(new HumanMessage(userMessage));
 
-  // First call to see if LLM wants to use a tool
+  // Use a loop to handle multiple or sequential tool calls
   let response = await modelWithTools.invoke(messages);
 
-  if (response.tool_calls && response.tool_calls.length > 0) {
+  while (response.tool_calls && response.tool_calls.length > 0) {
+    // 1. Add the AI's tool-call "Thought" to the history
+    messages.push(response); 
+
+    // 2. Execute all tool calls requested in this turn
     for (const toolCall of response.tool_calls) {
       const toolResult = await searchInventory.invoke(toolCall.args);
       
-      messages.push(response); 
+      // 3. Add the Tool's "Result" to the history
       messages.push(new ToolMessage({
         tool_call_id: toolCall.id,
         content: toolResult
       }));
-
-      // Final call to summarize tool results
-      response = await model.invoke(messages);
     }
+
+    // 4. Ask the model again: "Here is the data, what is your next move?"
+    // We use modelWithTools here in case it needs ANOTHER tool after seeing the first results
+    response = await modelWithTools.invoke(messages);
   }
 
+  // Final text response from the AI
   messages.push(response);
   return response.content;
 }
