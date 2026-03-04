@@ -1,0 +1,12 @@
+version: "2"
+authtoken: ""
+
+tunnels:
+  frontend:
+    proto: http
+    addr: 3000
+    host_header: localhost:3000
+  backend:
+    proto: http
+    addr: 5001
+    host_header: localhost:5001

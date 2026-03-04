@@ -1,0 +1,29 @@
+services:
+  backend-api:
+    build: ./backend-api
+    ports:
+      - "5001:5001" # Changed host port to 5001
+    environment:
+      PORT: "5001"
+      AI_AGENT_URL: "http://ai-agent:8080"
+    depends_on:
+      - ai-agent
+
+  ai-agent:
+    build: ./ai-agent
+    ports:
+      - "8080:8080"
+    environment:
+      GOOGLE_API_KEY: "AIzaSyBi6DEUQmu55eBcb2iyeturrjQBj4f9IDs"
+      BACKEND_URL: "http://backend-api:5001" # Point to the new port
+      # some libs may look for GEMINI_API_KEY; provide empty default to avoid warnings
+      GEMINI_API_KEY: ""
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    environment:
+      VITE_API_URL: "http://localhost:5001"
+    depends_on:
+      - backend-api
