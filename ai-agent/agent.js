@@ -39,10 +39,8 @@ const tools = [searchInventory];
 
 // 2. Model Initialization
 const model = new ChatGoogleGenerativeAI({
-  // Use the 2.5 Flash model shown in your Rate Limit screenshot
-  model: "gemini-2.5-flash", 
+  model: "gemini-2.5-flash-lite", // Much higher daily limit
   apiKey: process.env.GOOGLE_API_KEY,
-  // We can go back to v1beta now to use 'tools' and 'systemInstruction'
   apiVersion: "v1beta",
   temperature: 0,
 });
@@ -85,6 +83,7 @@ async function agentLoop(userMessage, sessionId) {
 
 app.post('/chat', async (req, res) => {
   try {
+    console.log('Chat request received:', req.body.message);
     const { message } = req.body;
     const reply = await agentLoop(message, 'default');
     res.json({ reply });

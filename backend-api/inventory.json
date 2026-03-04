@@ -1,0 +1,17 @@
+[
+  { "id": 1, "make": "Toyota", "model": "RAV4", "year": 2022, "price": 28500, "type": "SUV", "color": "Silver", "miles": 15000 },
+  { "id": 2, "make": "Ford", "model": "F-150", "year": 2021, "price": 34000, "type": "Truck", "color": "Blue", "miles": 28000 },
+  { "id": 3, "make": "Honda", "model": "Civic", "year": 2023, "price": 24500, "type": "Sedan", "color": "White", "miles": 5000 },
+  { "id": 4, "make": "Tesla", "model": "Model 3", "year": 2022, "price": 39900, "type": "Sedan", "color": "Black", "miles": 12000 },
+  { "id": 5, "make": "Jeep", "model": "Wrangler", "year": 2020, "price": 32000, "type": "SUV", "color": "Red", "miles": 35000 },
+  { "id": 6, "make": "Chevrolet", "model": "Silverado", "year": 2022, "price": 42000, "type": "Truck", "color": "Grey", "miles": 8000 },
+  { "id": 7, "make": "BMW", "model": "X5", "year": 2021, "price": 48000, "type": "SUV", "color": "Dark Blue", "miles": 22000 },
+  { "id": 8, "make": "Mazda", "model": "CX-5", "year": 2019, "price": 19500, "type": "SUV", "color": "Soul Red", "miles": 42000 },
+  { "id": 9, "make": "Nissan", "model": "Altima", "year": 2018, "price": 16000, "type": "Sedan", "color": "Gun Metallic", "miles": 55000 },
+  { "id": 10, "make": "Ram", "model": "1500", "year": 2023, "price": 52000, "type": "Truck", "color": "Flame Red", "miles": 1200 },
+  { "id": 11, "make": "Audi", "model": "A4", "year": 2021, "price": 31500, "type": "Sedan", "color": "Mythos Black", "miles": 18000 },
+  { "id": 12, "make": "Subaru", "model": "Outback", "year": 2020, "price": 27000, "type": "SUV", "color": "Autumn Green", "miles": 25000 },
+  { "id": 13, "make": "Kia", "model": "Telluride", "year": 2022, "price": 44000, "type": "SUV", "color": "Wolf Grey", "miles": 11000 },
+  { "id": 14, "make": "GMC", "model": "Sierra", "year": 2017, "price": 23000, "type": "Truck", "color": "Summit White", "miles": 78000 },
+  { "id": 15, "make": "Lexus", "model": "RX 350", "year": 2021, "price": 46500, "type": "SUV", "color": "Eminent White", "miles": 14000 }
+]
