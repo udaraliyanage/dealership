@@ -1,12 +1,17 @@
 {
   "name": "ai-agent",
   "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node agent.js"
+  },
   "dependencies": {
     "@langchain/google-genai": "^0.0.10",
     "@langchain/langgraph": "^0.0.15",
+    "@langchain/core": "^0.1.0",
     "express": "^4.18.2",
     "cors": "^2.8.5",
-    "axios": "^1.6.0",
+    "zod": "^3.22.0",
     "dotenv": "^16.3.1"
   }
 }

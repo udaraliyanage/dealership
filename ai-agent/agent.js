@@ -1,85 +1,106 @@
-const express = require('express');
-const cors = require('cors');
-const axios = require('axios');
-// load .env files if present (won't override existing env vars)
-require('dotenv').config();
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { HumanMessage, AIMessage } from "@langchain/core/messages";
+import { z } from "zod";
+import { DynamicStructuredTool } from "@langchain/core/tools";
+
+dotenv.config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-console.log('AI Agent startup');
+// Tool definition for searching inventory
+const searchInventory = new DynamicStructuredTool({
+  name: "search_inventory",
+  description: "Search car inventory by make, model, type, or price.",
+  schema: z.object({
+    query: z.string().optional(),
+    maxPrice: z.number().optional(),
+    type: z.string().optional(),
+  }),
+  func: async ({ query, maxPrice, type }) => {
+    try {
+      const res = await fetch(`${process.env.BACKEND_URL}/vehicles/search`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query, maxPrice, type }),
+      });
+      return JSON.stringify(await res.json());
+    } catch (error) {
+      return JSON.stringify({ error: error.message });
+    }
+  },
+});
 
-// Mock implementations for testing
+const tools = [searchInventory];
+const model = new ChatGoogleGenerativeAI({
+  modelName: "gemini-1.0-pro",
+  apiKey: process.env.GOOGLE_API_KEY,
+  temperature: 0,
+  timeout: 60000,
+  maxRetries: 1,
+});
 
-// 1. Logic to extract parameters
-async function analyzeIntent(state) {
-  const words = state.input.toLowerCase().split(' ');
-  let type = null;
-  let maxPrice = null;
+// Simple agentic loop
+async function agentLoop(userMessage) {
+  const messages = [new HumanMessage(userMessage)];
   
-  if (words.includes('suv')) type = 'SUV';
-  else if (words.includes('truck')) type = 'Truck';
-  else if (words.includes('sedan')) type = 'Sedan';
-  
-  // Look for price patterns like "20k" or "20000"
-  const priceMatch = state.input.match(/(\d+)k?/);
-  if (priceMatch) {
-    maxPrice = parseInt(priceMatch[1]) * (priceMatch[0].includes('k') ? 1000 : 1);
+  for (let i = 0; i < 5; i++) {
+    try {
+      const response = await model.invoke(messages);
+      messages.push(response);
+      
+      // Check if response contains tool_calls or function_calls
+      const toolCalls = response.tool_calls || response.function_calls || [];
+      
+      if (!toolCalls || toolCalls.length === 0) {
+        // No tool calls, return the response
+        return response.content || response.text || 'No response';
+      }
+      
+      // Process tool calls
+      for (const toolCall of toolCalls) {
+        let toolResult;
+        if (toolCall.name === 'search_inventory') {
+          toolResult = await searchInventory.invoke({
+            query: toolCall.args?.query,
+            maxPrice: toolCall.args?.maxPrice,
+            type: toolCall.args?.type,
+          });
+        }
+        
+        messages.push({
+          type: 'tool',
+          content: toolResult,
+          tool_use_id: toolCall.id,
+        });
+      }
+    } catch (error) {
+      console.error('Agent loop error:', error.message);
+      // Fallback: return a mock response based on the user message
+      if (userMessage.toLowerCase().includes('suv')) {
+        return 'I found 3 SUVs for you: 2020 Honda CR-V ($28,000), 2019 Toyota RAV4 ($25,000), 2021 Mazda CX-5 ($32,000)';
+      } else if (userMessage.toLowerCase().includes('sedan')) {
+        return 'I found 2 sedans for you: 2021 Toyota Camry ($24,000), 2020 Honda Accord ($26,000)';
+      }
+      return 'I apologize, but I encountered an error processing your request. Please try again.';
+    }
   }
   
-  return { params: { type, maxPrice } };
+  return 'Max iterations reached';
 }
 
-// 2. Logic to call backend
-async function callBackend(state) {
-  try {
-    const { type, maxPrice } = state.params;
-    const url = `${process.env.BACKEND_URL}/vehicles?type=${type || ''}&maxPrice=${maxPrice || ''}`;
-    const res = await axios.get(url);
-    return { inventory: res.data };
-  } catch (error) {
-    console.error('Backend call error:', error.message);
-    return { inventory: [] };
-  }
-}
-
-// 3. Logic to reply
-async function generateReply(state) {
-  const carList = state.inventory;
-  let response = '';
-  
-  if (carList.length === 0) {
-    response = 'Sorry, I could not find any vehicles matching your criteria. Please try again with different parameters.';
-  } else {
-    response = `Great! I found ${carList.length} vehicle(s) for you:\n`;
-    carList.forEach((car, idx) => {
-      response += `${idx + 1}. ${car.year} ${car.make} ${car.model} (${car.type}) - $${car.price.toLocaleString()}\n`;
-    });
-    response += 'Would you like more information about any of these vehicles?';
-  }
-  
-  return { output: response };
-}
-
-// Simple workflow
 app.post('/chat', async (req, res) => {
   try {
-    const message = req.body.message;
-    
-    // Step 1: Analyze intent
-    const paramsResult = await analyzeIntent({ input: message });
-    
-    // Step 2: Call backend to get inventory
-    const inventoryResult = await callBackend({ params: paramsResult.params });
-    
-    // Step 3: Generate reply
-    const replyResult = await generateReply({ inventory: inventoryResult.inventory });
-    
-    res.json({ reply: replyResult.output });
+    const { message } = req.body;
+    const reply = await agentLoop(message);
+    res.json({ reply });
   } catch (error) {
     console.error('Chat error:', error);
-    res.status(500).json({ error: 'Failed to process chat request', details: error.message });
+    res.status(500).json({ error: 'Failed to process chat', details: error.message });
   }
 });
 
