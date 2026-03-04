@@ -52,14 +52,16 @@ app.get('/vehicles', (req, res) => {
 // POST: Proxy chat messages to the AI Agent
 app.post('/chat', async (req, res) => {
   try {
-    const { message } = req.body;
-    console.log('💬 Passing message to AI Agent:', message);
+    const { message, sessionId } = req.body; // <--- Extract sessionId
+    console.log(`💬 Chat for Session [${sessionId}]:`, message);
     
-    const response = await axios.post(`${AI_AGENT_URL}/chat`, { message });
+    const response = await axios.post(`${AI_AGENT_URL}/chat`, { 
+      message, 
+      sessionId // <--- Forward it to the AI Agent
+    });
     res.json(response.data);
   } catch (error) {
-    console.error('❌ AI Agent Proxy Error:', error.message);
-    res.status(500).json({ error: 'Failed to connect to AI Agent' });
+    res.status(500).json({ error: 'AI Agent error' });
   }
 });
 

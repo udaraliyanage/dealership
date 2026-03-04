@@ -39,9 +39,8 @@ const tools = [searchInventory];
 
 // 2. Model Initialization
 const model = new ChatGoogleGenerativeAI({
-  model: "gemini-2.5-flash-lite", // Much higher daily limit
+  model: "gemini-2.5-flash-lite", // or "gemini-3.1-flash-lite-preview"
   apiKey: process.env.GOOGLE_API_KEY,
-  apiVersion: "v1beta",
   temperature: 0,
 });
 
@@ -89,13 +88,17 @@ async function agentLoop(userMessage, sessionId) {
 
 app.post('/chat', async (req, res) => {
   try {
-    console.log('Chat request received:', req.body.message);
-    const { message } = req.body;
-    const reply = await agentLoop(message, 'default');
+    console.log("New chat request received");
+    const { message, sessionId } = req.body; // <--- Get the real ID
+    
+    // Fallback to 'anonymous' if for some reason the ID is missing
+    const activeSession = sessionId || 'anonymous'; 
+    
+    const reply = await agentLoop(message, activeSession); 
     res.json({ reply });
   } catch (error) {
     console.error("AGENT ERROR:", error);
-    res.status(500).json({ reply: "I hit a snag. Try again?" });
+    res.status(500).json({ reply: "Snag hit. Try again?" });
   }
 });
 
