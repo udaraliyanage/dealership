@@ -2,9 +2,10 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
-import { HumanMessage, AIMessage } from "@langchain/core/messages";
+import { HumanMessage, SystemMessage, ToolMessage } from "@langchain/core/messages";
 import { z } from "zod";
 import { DynamicStructuredTool } from "@langchain/core/tools";
+import axios from 'axios';
 
 dotenv.config();
 
@@ -12,96 +13,85 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Tool definition for searching inventory
+const conversationHistory = new Map();
+
+// 1. Tool Definition
 const searchInventory = new DynamicStructuredTool({
   name: "search_inventory",
-  description: "Search car inventory by make, model, type, or price.",
+  description: "Search car inventory. Requires 'type' (SUV, Sedan, or Truck) and 'maxPrice' (number).",
   schema: z.object({
-    query: z.string().optional(),
-    maxPrice: z.number().optional(),
-    type: z.string().optional(),
+    type: z.enum(["SUV", "Sedan", "Truck"]).describe("Vehicle category"),
+    maxPrice: z.number().describe("Maximum budget in dollars"),
   }),
-  func: async ({ query, maxPrice, type }) => {
+  func: async ({ type, maxPrice }) => {
     try {
-      const res = await fetch(`${process.env.BACKEND_URL}/vehicles/search`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query, maxPrice, type }),
-      });
-      return JSON.stringify(await res.json());
+      const url = `${process.env.BACKEND_URL}/vehicles?type=${type}&maxPrice=${maxPrice}`;
+      console.log(`--- TOOL CALL: ${url} ---`);
+      const res = await axios.get(url);
+      return JSON.stringify(res.data);
     } catch (error) {
-      return JSON.stringify({ error: error.message });
+      return JSON.stringify({ error: "Inventory offline" });
     }
   },
 });
 
 const tools = [searchInventory];
+
+// 2. Model Initialization
 const model = new ChatGoogleGenerativeAI({
-  modelName: "gemini-1.0-pro",
+  // Use the 2.5 Flash model shown in your Rate Limit screenshot
+  model: "gemini-2.5-flash", 
   apiKey: process.env.GOOGLE_API_KEY,
+  // We can go back to v1beta now to use 'tools' and 'systemInstruction'
+  apiVersion: "v1beta",
   temperature: 0,
-  timeout: 60000,
-  maxRetries: 1,
 });
 
-// Simple agentic loop
-async function agentLoop(userMessage) {
-  const messages = [new HumanMessage(userMessage)];
-  
-  for (let i = 0; i < 5; i++) {
-    try {
-      const response = await model.invoke(messages);
-      messages.push(response);
+// Remove apiVersion and systemInstruction for now to maximize compatibility
+// Bind tools correctly
+const modelWithTools = model.bindTools(tools);
+
+async function agentLoop(userMessage, sessionId) {
+  if (!conversationHistory.has(sessionId)) {
+    conversationHistory.set(sessionId, [
+      new SystemMessage("You are a car dealer. Ask for 'type' and 'budget' before searching.")
+    ]);
+  }
+
+  const messages = conversationHistory.get(sessionId);
+  messages.push(new HumanMessage(userMessage));
+
+  // First call to see if LLM wants to use a tool
+  let response = await modelWithTools.invoke(messages);
+
+  if (response.tool_calls && response.tool_calls.length > 0) {
+    for (const toolCall of response.tool_calls) {
+      const toolResult = await searchInventory.invoke(toolCall.args);
       
-      // Check if response contains tool_calls or function_calls
-      const toolCalls = response.tool_calls || response.function_calls || [];
-      
-      if (!toolCalls || toolCalls.length === 0) {
-        // No tool calls, return the response
-        return response.content || response.text || 'No response';
-      }
-      
-      // Process tool calls
-      for (const toolCall of toolCalls) {
-        let toolResult;
-        if (toolCall.name === 'search_inventory') {
-          toolResult = await searchInventory.invoke({
-            query: toolCall.args?.query,
-            maxPrice: toolCall.args?.maxPrice,
-            type: toolCall.args?.type,
-          });
-        }
-        
-        messages.push({
-          type: 'tool',
-          content: toolResult,
-          tool_use_id: toolCall.id,
-        });
-      }
-    } catch (error) {
-      console.error('Agent loop error:', error.message);
-      // Fallback: return a mock response based on the user message
-      if (userMessage.toLowerCase().includes('suv')) {
-        return 'I found 3 SUVs for you: 2020 Honda CR-V ($28,000), 2019 Toyota RAV4 ($25,000), 2021 Mazda CX-5 ($32,000)';
-      } else if (userMessage.toLowerCase().includes('sedan')) {
-        return 'I found 2 sedans for you: 2021 Toyota Camry ($24,000), 2020 Honda Accord ($26,000)';
-      }
-      return 'I apologize, but I encountered an error processing your request. Please try again.';
+      messages.push(response); 
+      messages.push(new ToolMessage({
+        tool_call_id: toolCall.id,
+        content: toolResult
+      }));
+
+      // Final call to summarize tool results
+      response = await model.invoke(messages);
     }
   }
-  
-  return 'Max iterations reached';
+
+  messages.push(response);
+  return response.content;
 }
 
 app.post('/chat', async (req, res) => {
   try {
     const { message } = req.body;
-    const reply = await agentLoop(message);
+    const reply = await agentLoop(message, 'default');
     res.json({ reply });
   } catch (error) {
-    console.error('Chat error:', error);
-    res.status(500).json({ error: 'Failed to process chat', details: error.message });
+    console.error("AGENT ERROR:", error);
+    res.status(500).json({ reply: "I hit a snag. Try again?" });
   }
 });
 
-app.listen(8080, () => console.log('AI Agent running on port 8080'));
+app.listen(8080, '0.0.0.0', () => console.log('AI Agent running on port 8080'));
