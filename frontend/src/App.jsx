@@ -9,6 +9,19 @@ function App() {
   const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef(null);
 
+  // --- 1. SESSION INITIALIZATION ---
+  useEffect(() => {
+    // Check if we already have a session ID in the browser
+    let currentSession = sessionStorage.getItem('auto_session');
+    
+    if (!currentSession) {
+      // Create a unique ID like "session_abc123"
+      const newId = `session_${Math.random().toString(36).substring(2, 11)}`;
+      sessionStorage.setItem('auto_session', newId);
+      console.log("🎫 New Session Generated:", newId);
+    }
+  }, []);
+
   // Featured cars for the landing page
   const featuredCars = [
     { id: 1, name: "Tesla Model 3", price: "$39,900", img: "https://images.unsplash.com/photo-1560958089-b8a1929cea89?auto=format&fit=crop&w=400" },
@@ -20,6 +33,18 @@ function App() {
     scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
+  // --- 2. CLEAR CHAT FUNCTION ---
+  const handleClearChat = () => {
+    // Wipe browser session
+    sessionStorage.removeItem('auto_session');
+    // Generate fresh ID
+    const newId = `session_${Math.random().toString(36).substring(2, 11)}`;
+    sessionStorage.setItem('auto_session', newId);
+    // Clear UI
+    setMessages([]);
+    console.log("🧹 Memory cleared and new session started.");
+  };
+
   const onSend = async () => {
     if (!input.trim() || isTyping) return;
     const userMsg = input;
@@ -30,7 +55,7 @@ function App() {
     try {
       const { data } = await axios.post('http://localhost:5001/chat', { 
         message: userMsg,
-        sessionId: sessionStorage.getItem('auto_session') || 'guest' 
+        sessionId: sessionStorage.getItem('auto_session') // No longer needs || 'guest'
       });
       setMessages(prev => [...prev, { role: 'ai', text: data.reply }]);
     } catch (err) {
@@ -42,7 +67,6 @@ function App() {
 
   return (
     <div className="site-wrapper">
-      {/* --- LANDING PAGE --- */}
       <nav className="navbar">
         <div className="logo">🚗 AutoHub<span>AI</span></div>
         <div className="nav-links">
@@ -52,6 +76,7 @@ function App() {
         </div>
       </nav>
 
+      {/* Hero & Inventory sections stay the same... */}
       <header className="hero">
         <div className="hero-text">
           <h1>Find your perfect drive, <span>instantly.</span></h1>
@@ -79,7 +104,6 @@ function App() {
         </div>
       </section>
 
-      {/* --- CHATBOT WIDGET --- */}
       <button className={`fab ${isOpen ? 'active' : ''}`} onClick={() => setIsOpen(!isOpen)}>
         {isOpen ? '✕' : '💬'}
       </button>
@@ -87,10 +111,12 @@ function App() {
       <div className={`chat-container ${isOpen ? 'show' : ''}`}>
         <div className="chat-header">
           <div className="status-dot"></div>
-          <div>
+          <div style={{ flex: 1 }}>
             <h4>Concierge AI</h4>
             <p>Always online</p>
           </div>
+          {/* Added a Clear button in the header */}
+          <button className="clear-btn" onClick={handleClearChat} title="Reset Conversation">🧹</button>
         </div>
 
         <div className="chat-messages">

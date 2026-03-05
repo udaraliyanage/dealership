@@ -49,6 +49,20 @@ app.get('/vehicles', (req, res) => {
   res.json(filtered);
 });
 
+// 💰 Trade-In Estimation API
+app.post('/trade-in-estimate', (req, res) => {
+  const { year, mileage, model } = req.body;
+  
+  // Logic: Base value $15k, lose $1k for every year old, and $0.05 per mile
+  const currentYear = 2026;
+  let estimate = 15000;
+  estimate -= (currentYear - year) * 1000;
+  estimate -= (mileage * 0.05);
+
+  const finalValue = Math.max(estimate, 1000); // Floor at $1,000
+  res.json({ estimatedValue: finalValue });
+});
+
 // POST: Proxy chat messages to the AI Agent
 app.post('/chat', async (req, res) => {
   try {
