@@ -47,7 +47,28 @@ app.get('/vehicles', (req, res) => {
 });
 
 app.post('/trade-in-estimate', (req, res) => {
-  const { year, mileage } = req.body;
+  const { year, mileage, model } = req.body;
+
+  if (!year) {
+    return res.status(400).json({ error: "Missing 'year'. I need the vehicle's manufacturing year to calculate trade-in value." });
+  }
+
+  if (!model) {
+    return res.status(400).json({ error: "Missing 'model'. I need the vehicle's make and model to calculate trade-in value." });
+  }
+
+  if (!mileage) {
+    return res.status(400).json({ error: "Missing 'mileage'. I need the current odometer reading to calculate trade-in value." });
+  }
+
+  if (year < 1990 || year > 2027) {
+    return res.status(400).json({ error: "Vehicle year out of range. We only provide estimates for vehicles between 1990 and 2027. Please confirm the year with the customer." });
+  }
+
+  if (mileage > 500000) {
+    return res.status(400).json({ error: "High mileage detected (over 500k). For vehicles with very high mileage, please advise the customer to bring the car in for a manual appraisal to ensure accuracy." });
+  }
+
   const currentYear = 2026;
   let estimate = 15000 - (currentYear - year) * 1000 - (mileage * 0.05);
   res.json({ estimatedValue: Math.max(estimate, 1000) });
@@ -63,13 +84,24 @@ app.get('/available-slots', (req, res) => {
 
 // 2. Booking Endpoint (STRICT VALIDATION)
 app.post('/bookings', (req, res) => {
-  const { name, phone, model, slot, type } = req.body; // type: 'test-drive' or 'purchase'
+  const { name, phone, model, slot, type } = req.body;
 
-  // Backend enforcement of your requirement
-  if (!name || !phone || !model || !slot) {
-    return res.status(400).json({ 
-      error: "Mandatory fields missing: Name, Phone, Model, and Slot are required." 
-    });
+  // Mandatory fields: name, phone, model
+  if (!name) {
+    return res.status(400).json({ error: "Missing 'name'. I need the customer's full name to hold the test drive reservation." });
+  }
+
+  if (!phone) {
+    return res.status(400).json({ error: "Missing 'phone'. I need a valid contact number to send the booking confirmation and reminder." });
+  }
+
+  if (!model) {
+    return res.status(400).json({ error: "Missing 'model'. Please specify which vehicle model the customer wants to test drive (e.g., 'Toyota RAV4', 'Honda Civic')." });
+  }
+
+  // Optional: slot (can be omitted if no slots available)
+  if (!slot) {
+    console.log("⚠️  Warning: No time slot provided. Tentative booking created. Manager will contact customer to confirm time.");
   }
 
   const newBooking = {
@@ -77,7 +109,7 @@ app.post('/bookings', (req, res) => {
     name,
     phone,
     model,
-    slot,
+    slot: slot || "To be confirmed by manager",
     type: type || 'test-drive',
     createdAt: new Date()
   };
@@ -92,15 +124,23 @@ app.post('/bookings', (req, res) => {
 app.post('/lead', (req, res) => {
   const { name, phone, history } = req.body;
   
+  if (!name) {
+    return res.status(400).json({ error: "Missing 'name'. I need the customer's full name so the manager can follow up." });
+  }
+
+  if (!phone) {
+    return res.status(400).json({ error: "Missing 'phone'. I need a valid contact number so the manager can send the confirmation and follow-up." });
+  }
+  
   const lead = {
     id: `LEAD-${Date.now()}`,
-    name: name || "Unknown/Interested User",
-    phone: phone || "Not Provided",
+    name,
+    phone,
     history: history || [],
     timestamp: new Date()
   };
 
-  console.log(`🚨 Capturing lead :`, lead);
+  console.log(`🚨 Capturing lead:`, lead);
   leads.push(lead);
   console.log(`📈 Lead Captured. Total leads: ${leads.length}`);
   res.status(201).json({ status: "Lead recorded", leadId: lead.id });

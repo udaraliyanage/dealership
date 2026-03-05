@@ -4,12 +4,12 @@ import axios from 'axios';
 
 export const bookTestDrive = new DynamicStructuredTool({
   name: "book_test_drive",
-  description: "Finalize booking. Needs Name, Phone, Model, Slot.",
+  description: "Finalize a test drive booking with customer details. Only call this after confirming the customer's name, phone, and the specific vehicle model they want to test. The time slot is optional—if no slots are available, proceed without it and the manager will contact the customer to confirm a time.",
   schema: z.object({
-    name: z.string(),
-    phone: z.string(),
-    model: z.string(),
-    slot: z.string(),
+    name: z.string().describe("The customer's full name (e.g., 'John Smith')."),
+    phone: z.string().describe("The customer's phone number in their original format (e.g., '555-123-4567')."),
+    model: z.string().describe("The exact vehicle model to be test driven (e.g., 'Toyota RAV4', 'Honda Civic'). This should be a specific model available in the dealership."),
+    slot: z.string().optional().describe("The exact time slot the customer selected (e.g., '2:00 PM Monday', 'March 7 at 10:30 AM'). Optional—if no slots are available, omit this field and the manager will coordinate a time."),
   }),
   func: async (args) => {
     try {

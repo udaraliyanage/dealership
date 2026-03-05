@@ -4,7 +4,7 @@ import axios from 'axios';
 
 export const getBookingSlots = new DynamicStructuredTool({
   name: "get_booking_slots",
-  description: "Get available test drive slots.",
+  description: "Retrieve all available time slots for test drive appointments. Call this before attempting to book a test drive so you can show the customer what times are available.",
   schema: z.object({}),
   func: async () => {
     try {
