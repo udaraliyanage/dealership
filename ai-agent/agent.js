@@ -20,35 +20,84 @@ server.use(express.json());
 server.use(cors());
 
 const tools = [
+
   new DynamicStructuredTool({
     name: "search_inventory",
     description: "Search cars by type/budget.",
-    schema: z.object({ type: z.string().optional(), maxPrice: z.number().optional() }),
+    schema: z.object({ 
+      type: z.string().optional().describe("e.g., 'SUV', 'Sedan'"), 
+      maxPrice: z.number().optional().describe("Maximum price in dollars") 
+    }),
     func: async ({ type, maxPrice }) => {
-      const res = await axios.get(`${process.env.BACKEND_URL}/vehicles`, { params: { type, maxPrice } });
-      return JSON.stringify(res.data);
+      try {
+        const url = `${process.env.BACKEND_URL}/vehicles`;
+        console.log(`🔍 AGENT SEARCHING INVENTORY: ${url}`, { type, maxPrice });
+
+        const res = await axios.get(url, { params: { type, maxPrice } });
+
+        console.log(`✅ INVENTORY FOUND: ${res.data.length} vehicles.`);
+        return JSON.stringify(res.data);
+      } catch (err) {
+        console.error("❌ SEARCH INVENTORY ERROR:", err.message);
+        return `ERROR: Could not retrieve inventory. ${err.message}`;
+      }
     },
   }),
+
   new DynamicStructuredTool({
     name: "get_trade_in_estimate",
     description: "Calculate value. MANDATORY: year, mileage, model.",
-    schema: z.object({ year: z.number(), mileage: z.number(), model: z.string() }),
+    schema: z.object({ 
+      year: z.number(), 
+      mileage: z.number(), 
+      model: z.string() 
+    }),
     func: async (args) => {
-      const res = await axios.post(`${process.env.BACKEND_URL}/trade-in-estimate`, args);
-      return `Estimated Trade-In Value: $${res.data.estimatedValue}. (Note: This is a preliminary estimate ONLY. Final value is determined after a physical inspection at the dealership.)`;
+      try {
+        const url = `${process.env.BACKEND_URL}/trade-in-estimate`;
+        console.log(`⚖️ AGENT ESTIMATING TRADE-IN: ${url}`, args);
+
+        const res = await axios.post(url, args);
+
+        console.log("✅ ESTIMATE RECEIVED:", res.data.estimatedValue);
+        return `Estimated Trade-In Value: $${res.data.estimatedValue}. (Note: This is a preliminary estimate ONLY. Final value is determined after a physical inspection at the dealership.)`;
+      } catch (err) {
+        console.error("❌ TRADE-IN TOOL ERROR:", err.message);
+        return `ERROR: Failed to calculate estimate. ${err.message}`;
+      }
     }
   }),
-  new DynamicStructuredTool({
-    name: "submit_lead",
-    description: "Submit customer info. Needs name and phone.",
-    schema: z.object({ name: z.string(), phone: z.string(), summary: z.string() }),
-    func: async ({ name, phone, summary }, config) => {
-      console.log("📞 Submitting lead to manager:", { name, phone })  ;
-      const sessionId = config.configurable?.thread_id;
-      await axios.post(`${process.env.BACKEND_URL}/lead`, { sessionId, name, phone, history: summary });
-      return "SUCCESS: Manager notified.";
-    },
-  }),
+
+
+new DynamicStructuredTool({
+  name: "submit_lead",
+  description: "Submit customer info to the manager.",
+  schema: z.object({ name: z.string(), phone: z.string(), summary: z.string() }),
+  func: async ({ name, phone, summary }, runManager, config) => { // <--- Note the 3 arguments
+    
+    // LangChain often passes config as the 3rd argument in certain Node versions
+    const sessionId = 
+      config?.configurable?.thread_id || 
+      runManager?.configurable?.thread_id || 
+      "guest_session";
+
+    console.log(`📡 TOOL EXECUTING for session: ${sessionId}`);
+
+    try {
+      const res = await axios.post(`${process.env.BACKEND_URL}/lead`, { 
+        sessionId, 
+        name, 
+        phone, 
+        history: summary 
+      });
+      return `SUCCESS: Lead recorded (ID: ${res.data.leadId})`;
+    } catch (err) {
+      console.error("❌ Lead Tool Error:", err.message);
+      return `ERROR: ${err.message}`;
+    }
+  },
+}),
+
   new DynamicStructuredTool({
     name: "get_booking_slots",
     description: "Get available test drive slots.",
@@ -59,16 +108,37 @@ const tools = [
       return JSON.stringify(res.data.slots);
     }
   }),
+
   new DynamicStructuredTool({
-    name: "book_test_drive",
-    description: "Finalize booking. Needs Name, Phone, Model, Slot.",
-    schema: z.object({ name: z.string(), phone: z.string(), model: z.string(), slot: z.string() }),
-    func: async (args) => {
-      console.log("📅 Attempting to book test drive with details:", args)  ;
-      const res = await axios.post(`${process.env.BACKEND_URL}/bookings`, args);
-      return `Booking Confirmed! ID: ${res.data.id}`;
+  name: "book_test_drive",
+  description: "Finalize booking. Needs Name, Phone, Model, Slot.",
+  schema: z.object({ 
+    name: z.string(), 
+    phone: z.string(), 
+    model: z.string(), 
+    slot: z.string() 
+  }),
+  func: async (args) => {
+    try {
+      console.log("📅 AGENT INITIATING BOOKING:", args);
+      
+      const res = await axios.post(`${process.env.BACKEND_URL}/bookings`, {
+        ...args,
+        type: 'test-drive' // Explicitly adding the type your backend expects
+      });
+
+      console.log("✅ BACKEND BOOKING SUCCESS:", res.data);
+      return `Booking Confirmed! Your Booking ID is ${res.data.id}.`;
+    } catch (err) {
+      // THIS IS THE KEY: If the backend returns 400, this will show you the error message
+      const errorMsg = err.response?.data?.error || err.message;
+      console.error("❌ BACKEND BOOKING REJECTED:", errorMsg);
+      return `ERROR: The booking could not be completed. Reason: ${errorMsg}`;
     }
-  })
+  }
+})
+
+
 ];
 
 const GraphState = Annotation.Root({
@@ -78,13 +148,16 @@ const GraphState = Annotation.Root({
   msgCount: Annotation({ reducer: (p, n) => (p || 0) + 1, default: () => 0 }),
 });
 
-async function agentNode(state) {
+async function agentNode(state, config) {
 
   const currentDate = new Date().toLocaleDateString('en-US', { 
     year: 'numeric', 
     month: 'long', 
     day: 'numeric' 
   });
+
+  const tid = config?.configurable?.thread_id;
+  console.log(`🤖 Node processing session: ${tid}`);
 
   const systemPrompt = `
     ### TEMPORAL ANCHOR (2026)
@@ -111,13 +184,17 @@ async function agentNode(state) {
     - Review history: If you asked for a number in the last 2 turns and were ignored, answer the next question directly. Do not be a "broken record."
   `;
 
-  const response = await model.bindTools(tools).invoke([
-    new SystemMessage(systemPrompt),
-    ...state.messages
-  ]);
+// FIX 1: Add the SystemMessage here
+  const response = await model.bindTools(tools).invoke(
+    [new SystemMessage(systemPrompt), ...state.messages], 
+    config
+  );
 
-  return { messages: [response] };
-}
+// FIX 2: Return the incremented msgCount
+  return { 
+    messages: [response],
+    msgCount: (state.msgCount || 0) + 1 
+  };}
 
 async function leadQualifierNode(state) {
   if (state.msgCount >= 3) {
