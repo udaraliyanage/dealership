@@ -8,7 +8,6 @@ import { SystemMessage, HumanMessage } from "@langchain/core/messages";
 import { DynamicStructuredTool } from "@langchain/core/tools";
 import { z } from "zod";
 
-// --- 1. CONFIGURATION ---
 const model = new ChatGoogleGenerativeAI({
   model: "gemini-3.1-flash-lite-preview", 
   apiKey: process.env.GOOGLE_API_KEY,
@@ -20,111 +19,96 @@ const server = express();
 server.use(express.json());
 server.use(cors());
 
-// --- 2. THE TOOLS ---
 const tools = [
   new DynamicStructuredTool({
     name: "search_inventory",
-    description: "Search available cars by type and budget.",
-    schema: z.object({ 
-      type: z.string().optional(), 
-      maxPrice: z.number().optional() 
-    }),
+    description: "Search cars by type/budget.",
+    schema: z.object({ type: z.string().optional(), maxPrice: z.number().optional() }),
     func: async ({ type, maxPrice }) => {
       const res = await axios.get(`${process.env.BACKEND_URL}/vehicles`, { params: { type, maxPrice } });
       return JSON.stringify(res.data);
     },
   }),
-  // --- RESTORED TRADE-IN TOOL ---
   new DynamicStructuredTool({
     name: "get_trade_in_estimate",
-    description: "Get an estimated value for a user's current car based on year, mileage, and model.",
-    schema: z.object({ 
-      year: z.number(), 
-      mileage: z.number(), 
-      model: z.string() 
-    }),
+    description: "Calculate value. MANDATORY: year, mileage, model.",
+    schema: z.object({ year: z.number(), mileage: z.number(), model: z.string() }),
     func: async (args) => {
-      console.log
       const res = await axios.post(`${process.env.BACKEND_URL}/trade-in-estimate`, args);
-      return `Estimated Trade-In Value: $${res.data.estimatedValue}. Note: This is a preliminary estimate subject to inspection.`;
+      return `Estimated Trade-In Value: $${res.data.estimatedValue}. (Note: This is a preliminary estimate ONLY. Final value is determined after a physical inspection at the dealership.)`;
     }
   }),
   new DynamicStructuredTool({
+    name: "submit_lead",
+    description: "Submit customer info. Needs name and phone.",
+    schema: z.object({ name: z.string(), phone: z.string(), summary: z.string() }),
+    func: async ({ name, phone, summary }, config) => {
+      console.log("📞 Submitting lead to manager:", { name, phone })  ;
+      const sessionId = config.configurable?.thread_id;
+      await axios.post(`${process.env.BACKEND_URL}/lead`, { sessionId, name, phone, history: summary });
+      return "SUCCESS: Manager notified.";
+    },
+  }),
+  new DynamicStructuredTool({
     name: "get_booking_slots",
-    description: "Get available time slots for test drives.",
+    description: "Get available test drive slots.",
     schema: z.object({}),
     func: async () => {
-      console
+      console.log("📅 Fetching available test drive slots.")  ;
       const res = await axios.get(`${process.env.BACKEND_URL}/available-slots`);
       return JSON.stringify(res.data.slots);
     }
   }),
   new DynamicStructuredTool({
-    name: "submit_lead",
-    description: "Submit a high-interest customer to the manager. Use ONLY when you have name and phone.",
-    schema: z.object({ 
-      name: z.string(), 
-      phone: z.string(),
-      summary: z.string().describe("What is the user interested in? (e.g., Interested in X car, trade-in value was Y)")
-    }),
-    func: async ({ name, phone, summary }, config) => {
-      console.log(`🚨 Submitting lead for ${name} (${phone}). Summary: ${summary}`);
-      console.log(`📡 Attempting API call to: ${process.env.BACKEND_URL}/lead`);
-      const sessionId = config.configurable?.thread_id;
-      await axios.post(`${process.env.BACKEND_URL}/lead`, {
-        sessionId, name, phone, history: summary, type: "HOT_LEAD"
-      });
-      return "SUCCESS: Lead submitted. Tell user a manager will call shortly.";
-    },
-  }),
-  new DynamicStructuredTool({
     name: "book_test_drive",
-    description: "Finalize a test drive booking. REQUIRES name, phone, model, and slot.",
-    schema: z.object({ 
-      name: z.string(), 
-      phone: z.string(), 
-      model: z.string(), 
-      slot: z.string() 
-    }),
+    description: "Finalize booking. Needs Name, Phone, Model, Slot.",
+    schema: z.object({ name: z.string(), phone: z.string(), model: z.string(), slot: z.string() }),
     func: async (args) => {
-      try {
-        console.log(`📅 Attempting to book test drive for ${args.name} (${args.phone}) - Model: ${args.model}, Slot: ${args.slot}`);
-        const res = await axios.post(`${process.env.BACKEND_URL}/bookings`, args);
-        return `Booking Confirmed! ID: ${res.data.id}`;
-      } catch (err) {
-        return `Error: ${err.response?.data?.error || "Booking failed"}`;
-      }
+      console.log("📅 Attempting to book test drive with details:", args)  ;
+      const res = await axios.post(`${process.env.BACKEND_URL}/bookings`, args);
+      return `Booking Confirmed! ID: ${res.data.id}`;
     }
   })
 ];
 
-// --- 3. GRAPH STATE ---
 const GraphState = Annotation.Root({
   ...MessagesAnnotation.spec,
   isGenuine: Annotation({ reducer: (p, n) => n ?? p, default: () => false }),
-  leadSynced: Annotation({ reducer: (p, n) => n ?? p, default: () => false }),
+  sentiment: Annotation({ reducer: (p, n) => n ?? p, default: () => "neutral" }),
   msgCount: Annotation({ reducer: (p, n) => (p || 0) + 1, default: () => 0 }),
 });
 
-// --- 4. NODES ---
-
 async function agentNode(state) {
-  let strategy = "Be a helpful car dealership assistant.";
 
-  // TEMPTATION LOGIC: If flagged as genuine but no lead info yet
-  if (state.isGenuine && !state.leadSynced) {
-    strategy = `
-      The user is very interested. 
-      ACTION: Offer a $500 'First-Time Buyer' discount or mention that you can help them get a better trade-in value.
-      GOAL: Tell them you need their Name and Mobile number to check if they qualify for this specific incentive or to finalize the quote.
-    `;
-  }
+  const currentDate = new Date().toLocaleDateString('en-US', { 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  });
 
   const systemPrompt = `
-    ${strategy}
-    - If they want to book, buy, or get a final trade-in quote, you MUST ask for Name and Phone.
-    - If you get Name and Phone, immediately use 'submit_lead'.
-    - Use 'get_trade_in_estimate' if they mention wanting to swap or sell their current car.
+    ### TEMPORAL ANCHOR (2026)
+    - TODAY IS: ${currentDate}. 
+
+    ### LEAD CAPTURE & TOOL EXECUTION (CRITICAL)
+    1. The 'submit_lead' tool is the ONLY way to notify a manager. 
+    2. As soon as you have a Name and Phone Number, you MUST call 'submit_lead' immediately.
+    3. Do NOT tell the user "I have submitted your info" unless you are calling the tool in that same turn.
+    4. If 'isGenuine' is true (${state.isGenuine}) and you have Name/Phone, call 'submit_lead' even if they haven't picked a test drive slot yet.
+
+    ### MANDATORY TRADE-IN RULES
+    - DO NOT call 'get_trade_in_estimate' until you have: Year, Model, AND Mileage.
+    - If mileage is missing, you MUST ask for it first.
+    - After estimating, show the math: "$Car - $Trade = $FinalDifference".
+    - Remind them to bring the vehicle for inspection.
+
+    ### BOOKING RULES
+    - Call 'get_booking_slots' to show options.
+    - Do NOT call 'book_test_drive' until the user picks a SPECIFIC slot.
+    - If the user says "go ahead" without a slot, ask: "Which time works best for you?"
+
+    ### SOCIAL AWARENESS
+    - Review history: If you asked for a number in the last 2 turns and were ignored, answer the next question directly. Do not be a "broken record."
   `;
 
   const response = await model.bindTools(tools).invoke([
@@ -135,58 +119,36 @@ async function agentNode(state) {
   return { messages: [response] };
 }
 
-async function leadQualifierNode(state, config) {
-  const sessionId = config.configurable?.thread_id;
-  const count = state.msgCount || 0;
-
-  if (count >= 5 && !state.isGenuine) {
-    console.log(`🔍 [Safety Net] Analyzing Turn ${count} for Session ${sessionId}`);
-    const historyText = state.messages.map(m => `[${m._getType()}]: ${m.content}`).join("\n");
-    
+async function leadQualifierNode(state) {
+  if (state.msgCount >= 3) {
+    const historyText = state.messages.map(m => `${m._getType()}: ${m.content}`).join("\n");
     const analysis = await model.invoke([
-      new SystemMessage("Is this user a genuine car buyer? Respond ONLY with 'YES' or 'NO'."),
+      new SystemMessage(`Return ONLY JSON: {"isGenuine": bool, "sentiment": "happy"|"frustrated"|"skeptical"|"neutral"}`),
       new HumanMessage(historyText)
     ]);
-
-    if (analysis.content.toUpperCase().includes("YES")) {
-      console.log("📈 Genuine interest detected by Safety Net.");
-      return { isGenuine: true };
-    }
+    try {
+      const data = JSON.parse(analysis.content.replace(/```json|```/g, "").trim());
+      return { isGenuine: data.isGenuine, sentiment: data.sentiment };
+    } catch (e) { return {}; }
   }
   return {};
 }
 
-// --- 5. GRAPH CONSTRUCTION ---
 const workflow = new StateGraph(GraphState)
   .addNode("agent", agentNode)
   .addNode("tools", new ToolNode(tools))
   .addNode("qualifier", leadQualifierNode)
   .addEdge("__start__", "agent")
-  .addConditionalEdges("agent", (state) => {
-    if (state.messages.at(-1).tool_calls?.length > 0) return "tools";
-    return "qualifier";
-  })
+  .addConditionalEdges("agent", (s) => s.messages.at(-1).tool_calls?.length > 0 ? "tools" : "qualifier")
   .addEdge("tools", "agent")
   .addEdge("qualifier", "__end__");
 
 const app = workflow.compile({ checkpointer: new MemorySaver() });
 
-// --- 6. SERVER ---
 server.post('/chat', async (req, res) => {
-  try {
-    const { message, sessionId } = req.body;
-    const config = { configurable: { thread_id: sessionId || "guest" } };
-    
-    const result = await app.invoke({ 
-      messages: [new HumanMessage(message)] 
-    }, config);
-
-    const lastMessage = result.messages[result.messages.length - 1];
-    res.json({ reply: lastMessage.content });
-  } catch (err) {
-    console.error("Agent Error:", err);
-    res.status(500).json({ error: "I'm having trouble thinking right now." });
-  }
+  const { message, sessionId } = req.body;
+  const result = await app.invoke({ messages: [new HumanMessage(message)] }, { configurable: { thread_id: sessionId || "guest" } });
+  res.json({ reply: result.messages.at(-1).content });
 });
 
-server.listen(8080, '0.0.0.0', () => console.log("🚀 Agent Active on 8080"));
+server.listen(8080, '0.0.0.0', () => console.log("🚀 Agent Running"));
