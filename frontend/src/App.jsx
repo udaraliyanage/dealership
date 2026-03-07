@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import './App.css';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+
 function App() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
@@ -53,7 +55,7 @@ function App() {
     setIsTyping(true);
 
     try {
-      const { data } = await axios.post('http://localhost:5001/chat', { 
+      const { data } = await axios.post(`${API_BASE_URL}/chat`, { 
         message: userMsg,
         sessionId: sessionStorage.getItem('auto_session') // No longer needs || 'guest'
       });

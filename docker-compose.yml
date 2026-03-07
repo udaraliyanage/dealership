@@ -23,6 +23,8 @@ services:
     build: ./frontend
     ports:
       - "3000:3000"
+    environment:
+      VITE_API_URL: "http://localhost:5001"
     # Note: VITE_API_URL is usually better handled in a .env file 
     # within the frontend folder, but since App.jsx defaults to 
     # localhost:5001, this service is good to go!
