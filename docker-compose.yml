@@ -17,6 +17,7 @@ services:
     environment:
       PORT: "5001"
       AI_AGENT_URL: "http://ai-agent:8080"
+      DEBUG_LOGGING: "true"
 
   frontend:
     build: ./frontend

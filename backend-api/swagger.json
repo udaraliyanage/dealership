@@ -1,0 +1,99 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Dealership Backend API",
+    "version": "1.0.0",
+    "description": "API documentation for the dealership backend."
+  },
+  "paths": {
+    "/vehicles": {
+      "get": {
+        "summary": "Get all vehicles",
+        "parameters": [
+          { "name": "type", "in": "query", "schema": { "type": "string" } },
+          { "name": "maxPrice", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": { "200": { "description": "List of vehicles" } }
+      }
+    },
+    "/available-slots": {
+      "get": {
+        "summary": "Get available test drive slots",
+        "responses": { "200": { "description": "List of slots" } }
+      }
+    },
+    "/bookings": {
+      "post": {
+        "summary": "Book a test drive",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "phone": { "type": "string" },
+                  "model": { "type": "string" },
+                  "slot": { "type": "string" },
+                  "type": { "type": "string" }
+                },
+                "required": ["name", "phone", "model"]
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Booking created" } }
+      }
+    },
+    "/lead": {
+      "post": {
+        "summary": "Submit a lead",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "phone": { "type": "string" },
+                  "history": { "type": "array", "items": { "type": "string" } }
+                },
+                "required": ["name", "phone"]
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Lead recorded" } }
+      }
+    },
+    "/chat": {
+      "post": {
+        "summary": "Chat with AI agent",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "message": { "type": "string" },
+                  "sessionId": { "type": "string" }
+                },
+                "required": ["message"]
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "AI agent response" } }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health check",
+        "responses": { "200": { "description": "API status" } }
+      }
+    }
+  }
+}

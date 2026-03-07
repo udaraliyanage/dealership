@@ -6,8 +6,8 @@ export const searchInventory = new DynamicStructuredTool({
   name: "search_inventory",
   description: "Search the dealership inventory by vehicle type and maximum budget in NZD. Use this when the customer has specified what kind of car they want and how much they can spend.",
   schema: z.object({
-    type: z.string().optional().describe("The vehicle type. Must be one of: 'SUV', 'Sedan', or 'Truck'. Extract from customer's input (e.g., 'SUV', 'sedan', 'pickup truck')."),
-    maxPrice: z.number().optional().describe(\"The maximum price budget in NZD (e.g., 40000, 50000). Extract numerical values from phrases like '40k', '40 grands', '40 grand', '$40,000', '40000 NZD', 'NZD 40000', 'NZD 40,000', 'forty thousand', 'fifty grands', or similar variations.\"),
+    type: z.string().optional().describe('The vehicle type. Must be one of: "SUV", "Sedan", or "Truck". Extract from customer\'s input (e.g., "SUV", "sedan", "pickup truck").'),
+    maxPrice: z.number().optional().describe('The maximum price budget in NZD (e.g., 40000, 50000). Extract numerical values from phrases like "40k", "40 grands", "40 grand", "$40,000", "40000 NZD", "NZD 40000", "NZD 40,000", "forty thousand", "fifty grands", or similar variations.')
   }),
   func: async ({ type, maxPrice }) => {
     try {
