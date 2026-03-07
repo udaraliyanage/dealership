@@ -5,7 +5,7 @@ services:
       - "8080:8080"
     environment:
       # Using the key you provided directly
-      GOOGLE_API_KEY: "AIzaSyBi6DEUQmu55eBcb2iyeturrjQBj4f9IDs"
+      GOOGLE_API_KEY: "xxxxxxx"
       BACKEND_URL: "http://backend-api:5001"
     depends_on:
       - backend-api
