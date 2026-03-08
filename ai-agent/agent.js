@@ -140,6 +140,7 @@ const workflow = new StateGraph(GraphState)
 const app = workflow.compile({ checkpointer: new MemorySaver() });
 
 server.post('/chat', async (req, res) => {
+  console.log("💬 Received message for AI Agent:", req.body) ;
   const { message, sessionId } = req.body;
   const result = await app.invoke({ messages: [new HumanMessage(message)] }, { configurable: { thread_id: sessionId || "guest" } });
   res.json({ reply: result.messages.at(-1).content });

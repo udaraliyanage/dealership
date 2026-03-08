@@ -1,0 +1,16 @@
+{
+  "name": "vehicle-vector-search",
+  "version": "1.0.0",
+  "description": "Hybrid SQL and Vector Search using pgvector and Gemini",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "@langchain/google-genai": "latest",
+    "@langchain/core": "latest",
+    "dotenv": "^16.4.5",
+    "pg": "^8.11.5"
+  }
+}
