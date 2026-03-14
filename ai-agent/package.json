@@ -4,9 +4,10 @@
   "type": "module",
   "main": "agent.js",
   "scripts": {
-    "start": "node agent.js"
+    "start": "node src/agent.js"
   },
   "dependencies": {
+    "dotenv": "^16.4.5",
     "@langchain/langgraph": "0.2.36",
     "@langchain/google-genai": "0.1.8",
     "@langchain/core": "0.3.37",

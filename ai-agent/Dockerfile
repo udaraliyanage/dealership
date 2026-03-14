@@ -11,4 +11,4 @@ COPY . .
 
 EXPOSE 8080
 
-CMD ["node", "agent.js"]
+CMD ["node", "src/server.js"]

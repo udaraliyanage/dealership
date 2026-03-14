@@ -24,7 +24,7 @@ services:
     ports:
       - "8080:8080"
     environment:
-      GOOGLE_API_KEY: "AIzaSyDXDCJ06PTn50Isqm9Eji6LSSAa1iJpOCQ"
+      GOOGLE_API_KEY: "AIzaSyC5Vfx1wP5F5N1iAd1I94QQpmdnbrWu1Cw"
       BACKEND_URL: "http://backend-api:5001"
     depends_on:
       backend-api:
