@@ -9,7 +9,7 @@ export const bookTestDrive = new DynamicStructuredTool({
     name: z.string().describe("The customer's full name (e.g., 'John Smith')."),
     phone: z.string().describe("The customer's phone number in their original format (e.g., '555-123-4567')."),
     model: z.string().describe("The exact vehicle model to be test driven (e.g., 'Toyota RAV4', 'Honda Civic'). This should be a specific model available in the dealership."),
-    slot: z.string().optional().describe("The exact time slot the customer selected (e.g., '2:00 PM Monday', 'March 7 at 10:30 AM'). Optional—if no slots are available, omit this field and the manager will coordinate a time."),
+    slot: z.string().describe("The exact time slot the customer selected (e.g., '2:00 PM Monday', 'March 7 at 10:30 AM')"),
   }),
   func: async (args) => {
     try {
