@@ -11,7 +11,8 @@ import errorHandler from './middleware/errorHandler.js';
 import vehicleRoutes from './routes/vehicleRoutes.js';
 import bookingRoutes from './routes/bookingRoutes.js';
 import leadRoutes from './routes/leadRoutes.js';
-import tradeInRoutes from './routes/tradeInRoutes.js'; // If you moved this too
+import tradeInRoutes from './routes/tradeInRoutes.js';
+import financeRoutes from './routes/financeRoutes.js';
 
 const app = express();
 const PORT = process.env.PORT || 5001; 
@@ -29,6 +30,7 @@ app.use(vehicleRoutes);
 app.use(bookingRoutes);
 app.use(leadRoutes);
 if (tradeInRoutes) app.use(tradeInRoutes);
+app.use(financeRoutes);
 
 // --- SHARED PROXY LOGIC ---
 // Keeping the Chat Proxy here is fine as it acts as a "Gateway"
