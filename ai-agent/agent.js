@@ -139,11 +139,21 @@ const workflow = new StateGraph(GraphState)
 
 const app = workflow.compile({ checkpointer: new MemorySaver() });
 
+server.get('/health', (req, res) => res.json({ status: 'online' }));
+
 server.post('/chat', async (req, res) => {
-  console.log("💬 Received message for AI Agent:", req.body) ;
+  console.log("💬 Received message for AI Agent:", req.body);
   const { message, sessionId } = req.body;
-  const result = await app.invoke({ messages: [new HumanMessage(message)] }, { configurable: { thread_id: sessionId || "guest" } });
-  res.json({ reply: result.messages.at(-1).content });
+  try {
+    const result = await app.invoke(
+      { messages: [new HumanMessage(message)] },
+      { configurable: { thread_id: sessionId || "guest" } }
+    );
+    res.json({ reply: result.messages.at(-1).content });
+  } catch (err) {
+    console.error("❌ Agent error:", err.message);
+    res.status(500).json({ reply: "I'm having trouble right now. Please try again in a moment." });
+  }
 });
 
-server.listen(8080, '0.0.0.0', () => console.log("🚀 Agent Running"));
+server.listen(8080, '0.0.0.0', () => console.log("🚀 Agent Running on port 8080"));

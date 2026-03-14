@@ -1,1 +1,14 @@
+# Environment variables (NEVER commit these)
+.env
+*.env.local
+
+# Node
 node_modules/
+npm-debug.log*
+
+# Build outputs
+dist/
+build/
+
+# Docker
+.docker/
