@@ -48,11 +48,11 @@
     "year": 2023,
     "price": 49900,
     "type": "SUV",
-    "color": "Silver Metallic",
+    "color": "White",
     "odometer": 12000,
     "fuelType": "Hybrid",
     "transmission": "Automatic",
-    "image": "https://images.unsplash.com/photo-1621993202908-58e0e2d8e7e2?w=800&auto=format&fit=crop",
+    "image": "https://images.unsplash.com/photo-1622210642960-0f6a2cdbdc9f?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
     "description": "GX Hybrid AWD. Star Safety, lane trace assist, one careful owner."
   },
   {
@@ -62,11 +62,11 @@
     "year": 2023,
     "price": 55800,
     "type": "SUV",
-    "color": "Ironcut Black",
+    "color": "Blue",
     "odometer": 9800,
     "fuelType": "Plug-in Hybrid",
     "transmission": "Automatic",
-    "image": "https://images.unsplash.com/photo-1630898073544-b0c9f30c9f99?w=800&auto=format&fit=crop",
+    "image": "https://images.unsplash.com/photo-1651446404130-104e68e2f39a?q=80&w=2232&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
     "description": "ES 4WD PHEV. 7-seat family SUV, EV range 83km, full safety suite."
   },
   {
@@ -76,11 +76,11 @@
     "year": 2022,
     "price": 42500,
     "type": "SUV",
-    "color": "Soul Red Crystal",
+    "color": "Wine Red",
     "odometer": 18500,
     "fuelType": "Petrol",
     "transmission": "Automatic",
-    "image": "https://images.unsplash.com/photo-1555215695-3004980ad54e?w=800&auto=format&fit=crop",
+    "image": "https://cdn.autotrader.co.nz/at-listing/vehicledata/1165846/image/1.jpg?sv=2018-03-28&sr=b&sig=pDkId9bF10P95r7TpY8mt%2B8K9bxVXqLGpOtKBdGwnF8%3D&se=2045-07-20T01%3A28%3A25Z&sp=r",
     "description": "Takami AWD. Luxury interior, Bose audio, head-up display. Near new."
   },
   {
@@ -94,7 +94,7 @@
     "odometer": 28000,
     "fuelType": "Diesel",
     "transmission": "Automatic",
-    "image": "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=800&auto=format&fit=crop",
+    "image": "https://images.unsplash.com/photo-1674996047492-6b5cdc2dcf0a?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
     "description": "xDrive30d M Sport. Panoramic roof, HUD, driving assistant pro pack."
   },
   {
@@ -118,11 +118,11 @@
     "year": 2022,
     "price": 38500,
     "type": "Sedan",
-    "color": "Midnight Black",
+    "color": "Badge",
     "odometer": 22000,
     "fuelType": "Hybrid",
     "transmission": "Automatic",
-    "image": "https://images.unsplash.com/photo-1616455579100-2ceaa4eb2d37?w=800&auto=format&fit=crop",
+    "image": "https://images.unsplash.com/photo-1657872737697-737a2d123ef2?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8Y2Ftcnl8ZW58MHx8MHx8fDA%3D",
     "description": "SL Hybrid. JBL sound, leather trim, adaptive cruise. Fleet maintained."
   },
   {
@@ -146,11 +146,11 @@
     "year": 2022,
     "price": 41200,
     "type": "SUV",
-    "color": "Crystal White",
+    "color": "Blue",
     "odometer": 19000,
     "fuelType": "Petrol",
     "transmission": "Automatic",
-    "image": "https://images.unsplash.com/photo-1589824823718-9edc7adf0a50?w=800&auto=format&fit=crop",
+    "image": "https://images.unsplash.com/photo-1722542517938-aa6a98d25235?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
     "description": "Sport e-Boxer. Symmetrical AWD, EyeSight safety, panoramic roof."
   },
   {
@@ -160,11 +160,11 @@
     "year": 2023,
     "price": 43500,
     "type": "SUV",
-    "color": "Gun Metallic",
+    "color": "Aegean Blue",
     "odometer": 11000,
     "fuelType": "Petrol",
     "transmission": "Automatic",
-    "image": "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=800&auto=format&fit=crop",
+    "image": "https://images.unsplash.com/photo-1684839371407-17bddcf946d0?q=80&w=2018&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
     "description": "Ti e-Power. ProPilot assist, Bose audio, full safety suite. 1 owner."
   },
   {
@@ -178,7 +178,7 @@
     "odometer": 6800,
     "fuelType": "Petrol",
     "transmission": "Automatic",
-    "image": "https://images.unsplash.com/photo-1617788138017-80ad40651399?w=800&auto=format&fit=crop",
+    "image": "https://images.unsplash.com/photo-1647501581530-053b42684b8d?q=80&w=2097&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
     "description": "GT-Line AWD. Panoramic sunroof, ventilated seats, 12.3\" screen."
   },
   {
@@ -206,7 +206,7 @@
     "odometer": 4200,
     "fuelType": "Diesel",
     "transmission": "Automatic",
-    "image": "https://images.unsplash.com/photo-1581275326027-70a316b87a51?w=800&auto=format&fit=crop",
+    "image": "https://images.contentstack.io/v3/assets/blt8ede3f648df7664a/blt0378c64f91e2e45d/68955fe362f78365b5ef1ba3/Toyota-Land-Cruiser-300-GR-Sport-action-dps_www.jpg",
     "description": "GR Sport 4x4. Kinetic Dynamic Suspension, multi-terrain select. Like new."
   },
   {
@@ -248,7 +248,7 @@
     "odometer": 9100,
     "fuelType": "Petrol",
     "transmission": "Automatic",
-    "image": "https://images.unsplash.com/photo-1547744152-14d985cb937f?w=800&auto=format&fit=crop",
+    "image": "https://images.unsplash.com/photo-1666294715367-5a01360e30a5?q=80&w=2069&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
     "description": "RS Turbo. Honda Sensing, wireless CarPlay/Android Auto. 1 careful owner."
   },
   {
